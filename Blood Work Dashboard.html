@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blood Work Dashboard — Amila Abeysekera</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0f1117; --card:#1a1d2e; --card2:#212438; --border:#2e3250;
+    --text:#e8eaf6; --muted:#8b91b8;
+    --green:#4caf82; --green-bg:rgba(76,175,130,.12);
+    --amber:#f5a623; --amber-bg:rgba(245,166,35,.12);
+    --red:#ef5350;   --red-bg:rgba(239,83,80,.12);
+    --blue:#5c9eff;  --blue-bg:rgba(92,158,255,.12);
+    --purple:#b39ddb;--purple-bg:rgba(179,157,219,.15);
+    --accent:#5c9eff;--radius:14px;--radius-sm:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px}
+
+  /* HEADER */
+  .header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:20px}
+  .header-left h1{font-size:1.9rem;font-weight:700;background:linear-gradient(135deg,#5c9eff,#b39ddb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+  .header-left p{color:var(--muted);font-size:.92rem}
+  .header-right{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 18px;font-size:.85rem;color:var(--muted);text-align:right}
+  .header-right strong{color:var(--text)}
+  .disclaimer{background:rgba(239,83,80,.08);border:1px solid rgba(239,83,80,.25);border-radius:var(--radius-sm);padding:10px 16px;font-size:.8rem;color:#ef9a9a;margin-bottom:16px}
+
+  /* CAD CONFIRMED BANNER */
+  .cad-banner{background:rgba(239,83,80,.1);border:2px solid rgba(239,83,80,.45);border-radius:var(--radius);padding:16px 22px;margin-bottom:14px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .cad-banner-icon{font-size:1.8rem;flex-shrink:0}
+  .cad-banner-body{flex:1;min-width:220px}
+  .cad-banner-title{font-size:.95rem;font-weight:700;color:#ef9a9a;margin-bottom:4px}
+  .cad-banner-text{font-size:.82rem;color:var(--muted);line-height:1.55}
+  .cad-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .cad-pill{background:rgba(239,83,80,.14);border:1px solid rgba(239,83,80,.35);border-radius:20px;padding:3px 11px;font-size:.72rem;font-weight:600;color:#ef9a9a}
+
+  /* ALERT BANNER */
+  .alert-banner{background:rgba(179,157,219,.12);border:2px solid rgba(179,157,219,.5);border-radius:var(--radius);padding:18px 22px;margin-bottom:20px;display:flex;gap:16px;align-items:flex-start}
+  .alert-icon{font-size:2rem;line-height:1;flex-shrink:0}
+  .alert-title{font-size:1rem;font-weight:700;color:#ce93d8;margin-bottom:4px}
+  .alert-text{font-size:.85rem;color:var(--muted);line-height:1.5}
+  .alert-values{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+  .alert-val{background:rgba(239,83,80,.15);border:1px solid rgba(239,83,80,.4);border-radius:8px;padding:6px 14px;text-align:center}
+  .alert-val .v{font-size:1.2rem;font-weight:700;color:var(--red)}
+  .alert-val .l{font-size:.7rem;color:var(--muted)}
+
+  /* SCORECARD */
+  .scorecard{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:20px}
+  .sc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;transition:transform .2s;cursor:default}
+  .sc:hover{transform:translateY(-2px)}
+  .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .sc.green::before{background:var(--green)} .sc.amber::before{background:var(--amber)}
+  .sc.red::before{background:var(--red)}     .sc.blue::before{background:var(--blue)}
+  .sc.purple::before{background:var(--purple)}
+  .sc-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+  .sc-value{font-size:1.6rem;font-weight:700;line-height:1;margin-bottom:5px}
+  .sc.green .sc-value{color:var(--green)} .sc.amber .sc-value{color:var(--amber)}
+  .sc.red .sc-value{color:var(--red)}     .sc.blue .sc-value{color:var(--blue)}
+  .sc.purple .sc-value{color:var(--purple)}
+  .sc-sub{font-size:.73rem;color:var(--muted)}
+  .badge{display:inline-flex;align-items:center;gap:3px;font-size:.67rem;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:5px;text-transform:uppercase;letter-spacing:.04em}
+  .badge.green{background:var(--green-bg);color:var(--green)} .badge.amber{background:var(--amber-bg);color:var(--amber)}
+  .badge.red{background:var(--red-bg);color:var(--red)}       .badge.blue{background:var(--blue-bg);color:var(--blue)}
+  .badge.purple{background:var(--purple-bg);color:#ce93d8}    .badge.gold{background:rgba(255,215,0,.15);color:#ffd700}
+
+  /* HIGHLIGHTS */
+  .highlights{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:20px}
+  .hl{border-radius:var(--radius);padding:15px 17px;border:1px solid}
+  .hl.green{background:var(--green-bg);border-color:rgba(76,175,130,.3)}
+  .hl.amber{background:var(--amber-bg);border-color:rgba(245,166,35,.3)}
+  .hl.red{background:var(--red-bg);border-color:rgba(239,83,80,.3)}
+  .hl.purple{background:var(--purple-bg);border-color:rgba(179,157,219,.4)}
+  .hl.gold{background:rgba(255,215,0,.07);border-color:rgba(255,215,0,.3)}
+  .hl.blue{background:var(--blue-bg);border-color:rgba(92,158,255,.3)}
+  .hl-icon{font-size:1.3rem;margin-bottom:5px}
+  .hl-title{font-size:.84rem;font-weight:700;margin-bottom:3px}
+  .hl.green .hl-title{color:var(--green)} .hl.amber .hl-title{color:var(--amber)}
+  .hl.red .hl-title{color:var(--red)}     .hl.purple .hl-title{color:#ce93d8}
+  .hl.gold .hl-title{color:#ffd700}       .hl.blue .hl-title{color:var(--blue)}
+  .hl-text{font-size:.77rem;color:var(--muted);line-height:1.5}
+
+  /* SECTION */
+  .section-title{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+  /* GRID */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px}
+  @media(max-width:960px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+  /* PANEL */
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+  .panel-title{font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+
+  /* RANGE BAR */
+  .mrow{margin-bottom:12px}
+  .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .mname{font-size:.8rem;color:var(--text)}
+  .mval{font-size:.86rem;font-weight:700}
+  .mval.green{color:var(--green)} .mval.amber{color:var(--amber)} .mval.red{color:var(--red)} .mval.blue{color:var(--blue)}
+  .track{position:relative;height:5px;background:var(--card2);border-radius:3px;overflow:visible}
+  .fill{position:absolute;top:0;left:0;height:100%;border-radius:3px;opacity:.3}
+  .dot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid var(--bg);z-index:2;cursor:pointer;transition:transform .2s}
+  .dot:hover{transform:translate(-50%,-50%) scale(1.5)}
+  .dot.green{background:var(--green)} .dot.amber{background:var(--amber)} .dot.red{background:var(--red)}
+  .ref-labels{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:2px}
+
+  /* CHART */
+  .chart-h200{position:relative;height:200px} .chart-h240{position:relative;height:240px}
+  .chart-h160{position:relative;height:160px} .chart-h120{position:relative;height:120px}
+
+  /* TIMELINE */
+  .timeline{display:flex;flex-direction:column;gap:0;position:relative}
+  .timeline::before{content:'';position:absolute;left:18px;top:12px;bottom:12px;width:2px;background:linear-gradient(to bottom,rgba(92,158,255,.5),rgba(179,157,219,.5))}
+  .tl-item{display:flex;gap:14px;align-items:flex-start;padding:10px 0}
+  .tl-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;margin-top:2px;border:2px solid var(--bg);z-index:1;position:relative}
+  .tl-dot.red{background:var(--red)} .tl-dot.amber{background:var(--amber)}
+  .tl-dot.green{background:var(--green)} .tl-dot.blue{background:var(--blue)}
+  .tl-dot.purple{background:var(--purple)}
+  .tl-content{flex:1}
+  .tl-date{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+  .tl-title{font-size:.84rem;font-weight:600;color:var(--text);margin-bottom:3px}
+  .tl-body{font-size:.76rem;color:var(--muted);line-height:1.5}
+
+  /* DX TABLE */
+  .dx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:0}
+  .dx-item{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+  .dx-code{font-size:.68rem;font-family:monospace;background:rgba(92,158,255,.1);color:var(--blue);border-radius:4px;padding:2px 6px;flex-shrink:0;margin-top:1px}
+  .dx-desc{font-size:.78rem;color:var(--text);line-height:1.4}
+  .dx-status{font-size:.68rem;color:var(--muted)}
+
+  /* MED CARDS */
+  .med-grid{display:flex;flex-wrap:wrap;gap:10px}
+  .med-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:180px}
+  .med-name{font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:3px}
+  .med-dose{font-size:.76rem;color:var(--blue)}
+  .med-info{font-size:.72rem;color:var(--muted);margin-top:2px}
+
+  /* TABLE */
+  .tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+  .tbl th{text-align:left;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;padding:7px 9px;border-bottom:1px solid var(--border);font-weight:600}
+  .tbl td{padding:7px 9px;border-bottom:1px solid rgba(46,50,80,.4);vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tr:hover td{background:rgba(255,255,255,.02)}
+  .pill{display:inline-block;font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:20px}
+  .pill.green{background:var(--green-bg);color:var(--green)} .pill.amber{background:var(--amber-bg);color:var(--amber)}
+  .pill.red{background:var(--red-bg);color:var(--red)}       .pill.blue{background:var(--blue-bg);color:var(--blue)}
+  .pill.purple{background:var(--purple-bg);color:#ce93d8}    .pill.gold{background:rgba(255,215,0,.15);color:#ffd700}
+  .hi-red{color:var(--red);font-weight:700} .hi-amber{color:var(--amber);font-weight:700}
+  .hi-green{color:var(--green)} .hi-purple{color:#ce93d8;font-weight:700}
+
+  .footer{text-align:center;color:var(--muted);font-size:.74rem;margin-top:28px;padding-top:16px;border-top:1px solid var(--border)}
+  .mb18{margin-bottom:18px}
+
+  /* ENTRY PANEL */
+  .entry-section{background:linear-gradient(135deg,rgba(92,158,255,.08),rgba(179,157,219,.06));border:1.5px solid rgba(92,158,255,.35);border-radius:var(--radius);padding:22px 24px;margin-bottom:20px}
+  .entry-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .entry-title{font-size:1rem;font-weight:700;color:var(--text)}
+  .entry-subtitle{font-size:.78rem;color:var(--muted);margin-top:2px}
+  .entry-form{display:grid;grid-template-columns:180px 110px 110px 130px 1fr;gap:12px;align-items:end}
+  @media(max-width:800px){.entry-form{grid-template-columns:1fr 1fr}}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .field input{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-size:.88rem;outline:none;transition:border-color .2s}
+  .field input:focus{border-color:var(--blue)}
+  .field input::placeholder{color:#4a5078}
+  .btn-add{background:linear-gradient(135deg,#5c9eff,#7c6fcd);border:none;border-radius:var(--radius-sm);padding:10px 22px;color:#fff;font-size:.86rem;font-weight:700;cursor:pointer;transition:opacity .2s,transform .15s;white-space:nowrap;align-self:end}
+  .btn-add:hover{opacity:.88;transform:translateY(-1px)}
+  .btn-add:active{transform:translateY(0)}
+  .entry-feedback{font-size:.78rem;margin-top:8px;min-height:20px}
+  .entry-feedback.ok{color:var(--green)} .entry-feedback.err{color:var(--red)}
+
+  /* LOG TABLE */
+  .log-section{margin-top:18px}
+  .log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .log-title{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .btn-clear{background:rgba(239,83,80,.1);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:4px 12px;color:var(--red);font-size:.72rem;cursor:pointer;transition:background .2s}
+  .btn-clear:hover{background:rgba(239,83,80,.2)}
+  .log-empty{font-size:.78rem;color:#4a5078;font-style:italic;padding:10px 0}
+  .log-tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+  .log-tbl th{text-align:left;color:var(--muted);font-size:.69rem;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--border);font-weight:600}
+  .log-tbl td{padding:7px 10px;border-bottom:1px solid rgba(46,50,80,.3);vertical-align:middle}
+  .log-tbl tr:last-child td{border-bottom:none}
+  .log-tbl tr:hover td{background:rgba(255,255,255,.02)}
+  .log-delete{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:0 4px;transition:color .2s}
+  .log-delete:hover{color:var(--red)}
+  .tag-sys{display:inline-block;font-size:.65rem;background:rgba(92,158,255,.12);color:var(--blue);border-radius:4px;padding:1px 6px;font-weight:600}
+  .tag-user{display:inline-block;font-size:.65rem;background:rgba(76,175,130,.12);color:var(--green);border-radius:4px;padding:1px 6px;font-weight:600}
+  .bp-ok{color:var(--green);font-weight:600} .bp-warn{color:var(--amber);font-weight:600} .bp-hi{color:var(--red);font-weight:600}
+  .w-ok{color:var(--green)} .w-warn{color:var(--amber)}
+
+  /* BP STATUS BANNER (live) */
+  .live-status{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .live-stat{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;flex:1;min-width:140px;text-align:center}
+  .live-stat-val{font-size:1.4rem;font-weight:700;line-height:1;margin-bottom:3px}
+  .live-stat-lbl{font-size:.7rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>Blood Work Dashboard</h1>
+    <p>Longitudinal health analysis &nbsp;·&nbsp; Aug 2024 – Mar 2026 &nbsp;·&nbsp; 6 lab draws &nbsp;·&nbsp; Cardiology-integrated &nbsp;·&nbsp; Updated Mar 31, 2026</p>
+  </div>
+  <div class="header-right">
+    <strong>Amila Abeysekera</strong><br>
+    DOB: 03/26/1981 · Age 45 · Male · Asian · Non-smoker<br>
+    Cardiologist: <strong>Dr. Hamid Taheri, MD</strong><br>
+    Latest draw: <strong>Mar 27, 2026</strong>
+  </div>
+</div>
+
+<div class="disclaimer">⚠️ Educational purposes only — not a substitute for medical advice. Always consult your physician.</div>
+
+<!-- CAD CONFIRMED BANNER -->
+<div class="cad-banner">
+  <div class="cad-banner-icon">🫀</div>
+  <div class="cad-banner-body">
+    <div class="cad-banner-title">CONFIRMED: Coronary Artery Disease (CAD) — ICD-10 I25.10</div>
+    <div class="cad-banner-text">CT coronary angiogram (Oct 2024) confirmed mild calcification + soft plaque in mid RCA. This elevates all cardiovascular risk targets: LDL goal is now <strong style="color:#ef9a9a">&lt;70 mg/dL</strong> (secondary prevention, not the standard &lt;100). Apo B target is &lt;80. Annual cardiology follow-up scheduled Nov 2026. 2-D CFD Echo ordered — pending completion.</div>
+    <div class="cad-pills">
+      <span class="cad-pill">I25.10 Atherosclerotic CAD</span>
+      <span class="cad-pill">E78.41 Elevated Lp(a)</span>
+      <span class="cad-pill">I10 Hypertension (controlled)</span>
+      <span class="cad-pill">E78.00 Hypercholesterolemia (treated)</span>
+      <span class="cad-pill">⏳ 2-D CFD Echo Pending</span>
+    </div>
+  </div>
+</div>
+
+<!-- LP(a) ALERT BANNER -->
+<div class="alert-banner">
+  <div class="alert-icon">🔴</div>
+  <div style="flex:1">
+    <div class="alert-title">CRITICAL FINDING: Lipoprotein(a) [Lp(a)] — Severely Elevated in CAD Patient</div>
+    <div class="alert-text">Lp(a) is a genetically-determined independent cardiovascular risk factor. In the context of <strong style="color:#ef9a9a">confirmed CAD</strong>, this finding is doubly significant — Lp(a) is not reduced by statins, and dedicated Lp(a)-lowering therapies (PCSK9 inhibitors, emerging RNA-based agents) are the only effective options. Dr. Taheri has discussed Lp(a) clinical trial participation. Consistent readings at 3–4× the upper limit indicate a stable genetic baseline.</div>
+    <div class="alert-values">
+      <div class="alert-val"><div class="v">238.2</div><div class="l">Oct 2025 (nmol/L)</div></div>
+      <div class="alert-val"><div class="v">205.2</div><div class="l">Nov 2025 (nmol/L)</div></div>
+      <div class="alert-val" style="background:rgba(76,175,130,.1);border-color:rgba(76,175,130,.3)"><div class="v" style="color:var(--green)">&lt;75</div><div class="l">Reference max</div></div>
+      <div class="alert-val" style="background:rgba(92,158,255,.1);border-color:rgba(92,158,255,.3)"><div class="v" style="color:var(--blue)">Trial</div><div class="l">Discussed w/ Dr. Taheri</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORECARD -->
+<div class="scorecard">
+  <div class="sc purple">
+    <div class="sc-label">Lp(a)</div>
+    <div class="sc-value">238</div>
+    <div class="sc-sub">nmol/L · Ref: &lt;75</div>
+    <div class="badge purple">🔴 Critical</div>
+  </div>
+  <div class="sc amber">
+    <div class="sc-label">LDL (CAD Target &lt;70)</div>
+    <div class="sc-value">57</div>
+    <div class="sc-sub">mg/dL · CAD goal: &lt;70</div>
+    <div class="badge gold">✓ At Goal</div>
+  </div>
+  <div class="sc green">
+    <div class="sc-label">HbA1c</div>
+    <div class="sc-value">5.2%</div>
+    <div class="sc-sub">Ref: &lt;5.7%</div>
+    <div class="badge green">✓ Normal</div>
+  </div>
+  <div class="sc green">
+    <div class="sc-label">hs-CRP (Nov '25)</div>
+    <div class="sc-value">0.8</div>
+    <div class="sc-sub">mg/L · Ref: &lt;3.0</div>
+    <div class="badge green">✓ Resolved</div>
+  </div>
+  <div class="sc green">
+    <div class="sc-label">NT-proBNP</div>
+    <div class="sc-value">&lt;50</div>
+    <div class="sc-sub">pg/mL · Ref: ≤97</div>
+    <div class="badge green">✓ Excellent</div>
+  </div>
+  <div class="sc green">
+    <div class="sc-label">Troponin T</div>
+    <div class="sc-value">7.1</div>
+    <div class="sc-sub">pg/mL · Ref: &lt;19</div>
+    <div class="badge green">✓ Normal</div>
+  </div>
+  <div class="sc amber">
+    <div class="sc-label">Platelet Count</div>
+    <div class="sc-value">140</div>
+    <div class="sc-sub">×10³/µL · Ref: 140–425</div>
+    <div class="badge amber">⚠ Borderline</div>
+  </div>
+  <div class="sc red">
+    <div class="sc-label">MPV</div>
+    <div class="sc-value">12.9</div>
+    <div class="sc-sub">fL · Ref: 8.6–12.1</div>
+    <div class="badge red">↑ Elevated</div>
+  </div>
+  <div class="sc green">
+    <div class="sc-label">BP (Nov '25)</div>
+    <div class="sc-value">122/90</div>
+    <div class="sc-sub">mmHg · Prev: 165/133</div>
+    <div class="badge green">✓ Controlled</div>
+  </div>
+  <div class="sc green">
+    <div class="sc-label">Vitamin D</div>
+    <div class="sc-value">82</div>
+    <div class="sc-sub">ng/mL · Ref: 30–100</div>
+    <div class="badge green">✓ Excellent</div>
+  </div>
+  <div class="sc green">
+    <div class="sc-label">TSH</div>
+    <div class="sc-value">1.07</div>
+    <div class="sc-sub">µIU/mL · Normal</div>
+    <div class="badge green">✓ Normal</div>
+  </div>
+  <div class="sc blue">
+    <div class="sc-label">2-D CFD Echo</div>
+    <div class="sc-value">⏳</div>
+    <div class="sc-sub">Ordered Nov 2025</div>
+    <div class="badge blue">Pending</div>
+  </div>
+</div>
+
+<!-- HIGHLIGHTS -->
+<div class="highlights">
+  <div class="hl red">
+    <div class="hl-icon">🫀</div>
+    <div class="hl-title">CAD Confirmed — Secondary Prevention Mode</div>
+    <div class="hl-text">Mid-RCA plaque confirmed on CT angio (Oct 2024). All targets now reflect secondary prevention: LDL &lt;70, Apo B &lt;80, aggressive BP control. 2-D CFD Echo ordered to assess hemodynamic flow.</div>
+  </div>
+  <div class="hl purple">
+    <div class="hl-icon">🔴</div>
+    <div class="hl-title">Lp(a): Critical in CAD Context</div>
+    <div class="hl-text">205–238 nmol/L across two draws. In a CAD patient, elevated Lp(a) significantly amplifies residual risk beyond LDL. Clinical trial participation discussed with Dr. Taheri. Not reducible by statins.</div>
+  </div>
+  <div class="hl gold">
+    <div class="hl-icon">🏆</div>
+    <div class="hl-title">Lipid Response: Exceptional — LDL Now at Goal</div>
+    <div class="hl-text">LDL dropped 159→57 (−64%) on Rosuvastatin 10mg. Latest 57 mg/dL meets the &lt;70 CAD target. Nov '25 draw showed 86 — slightly above goal at that time. Sustained response excellent.</div>
+  </div>
+  <div class="hl green">
+    <div class="hl-icon">📉</div>
+    <div class="hl-title">BP: Dramatic Improvement</div>
+    <div class="hl-text">BP normalized from hypertensive crisis (165/133) to controlled (122/90) on Metoprolol. Weight loss of 31 lbs (184→153) contributed significantly. BP remains well-controlled through Nov 2025.</div>
+  </div>
+  <div class="hl amber">
+    <div class="hl-icon">👁</div>
+    <div class="hl-title">Platelets: Volatile — Monitor for Statin Effect</div>
+    <div class="hl-text">Pattern: 100 (Aug '24) → 118 (Nov '25) → 140 (Mar '26). Below 140 in 2 of 3 draws. Rosuvastatin-associated thrombocytopenia possible. Discuss trend with hematology or Dr. Taheri.</div>
+  </div>
+  <div class="hl green">
+    <div class="hl-icon">✅</div>
+    <div class="hl-title">hs-CRP: Fully Resolved</div>
+    <div class="hl-text">Oct 2024 elevated CRP (6.0 mg/L) was transient. Nov 2025 confirmed 0.8 mg/L — low inflammatory cardiovascular risk. Statin anti-inflammatory effect likely contributing.</div>
+  </div>
+</div>
+
+<!-- CLINICAL TIMELINE + MEDICATIONS -->
+<div class="grid-2 mb18">
+  <div class="panel">
+    <div class="panel-title">Clinical Timeline — Dr. Taheri, MD (Cardiology)</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot red"></div>
+        <div class="tl-content">
+          <div class="tl-date">Jul 12, 2024 — New Patient Visit</div>
+          <div class="tl-title">Palpitations · Hypertensive Urgency</div>
+          <div class="tl-body">BP 165/133. Weight 184 lbs (BMI 27.98). Abnormal ECG noted (R94.31). Started Metoprolol 25mg. Ordered 2-D Echo + lipid panel. Elevated CRP (6.0 mg/L) found on labs.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot amber"></div>
+        <div class="tl-content">
+          <div class="tl-date">Oct 23, 2024 — Return Visit · CAD Confirmed</div>
+          <div class="tl-title">CT Coronary Angiogram — Positive for Plaque</div>
+          <div class="tl-body">Mild calcification + soft plaque in mid RCA confirmed (I25.10). LDL 162 mg/dL — secondary prevention target &lt;70 set. Started Rosuvastatin 10mg qd. Weight now 153 lbs (−31 lbs). BP 120/88 — normalized. 2-D Echo: normal (Palpitations resolved).</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-content">
+          <div class="tl-date">Nov 5, 2025 — Return Visit · Annual Follow-Up</div>
+          <div class="tl-title">Stable · Lp(a) Discussed · Trial Offered</div>
+          <div class="tl-body">LDL 70 mg/dL (borderline above &lt;70 goal). Lp(a) 238.2 nmol/L — severely elevated. Lp(a)-lowering clinical trial discussed. BP 122/90. Weight ~161 lbs. 2-D CFD Echo ordered (⏳ pending). Next annual follow-up: Nov 2026.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Active Diagnoses &amp; Medications</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:.76rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Active Diagnoses (ICD-10)</div>
+      <div class="dx-grid">
+        <div class="dx-item"><span class="dx-code">I25.10</span><div><div class="dx-desc">Atherosclerotic CAD</div><div class="dx-status">Confirmed — mid-RCA plaque</div></div></div>
+        <div class="dx-item"><span class="dx-code">E78.41</span><div><div class="dx-desc">Elevated Lipoprotein(a)</div><div class="dx-status">238 nmol/L · Trial discussed</div></div></div>
+        <div class="dx-item"><span class="dx-code">E78.00</span><div><div class="dx-desc">Hypercholesterolemia</div><div class="dx-status">Treated · LDL 57 (at goal)</div></div></div>
+        <div class="dx-item"><span class="dx-code">I10</span><div><div class="dx-desc">Hypertension</div><div class="dx-status">Controlled · 122/90</div></div></div>
+        <div class="dx-item"><span class="dx-code">R94.31</span><div><div class="dx-desc">Abnormal ECG</div><div class="dx-status">Noted Jul 2024</div></div></div>
+        <div class="dx-item"><span class="dx-code">Z82.49</span><div><div class="dx-desc">Family Hx — CABG</div><div class="dx-status">Elevated familial CVD risk</div></div></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.76rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Current Medications</div>
+      <div class="med-grid">
+        <div class="med-card">
+          <div class="med-name">Rosuvastatin</div>
+          <div class="med-dose">10 mg · Once daily</div>
+          <div class="med-info">Started Oct 23, 2024 · Statin — LDL 162→57 (−64%)</div>
+        </div>
+        <div class="med-card">
+          <div class="med-name">Metoprolol</div>
+          <div class="med-dose">25 mg · Daily</div>
+          <div class="med-info">Started Jul 12, 2024 · Beta-blocker — BP, palpitations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INTERACTIVE ENTRY PANEL -->
+<div class="entry-section">
+  <div class="entry-header">
+    <div>
+      <div class="entry-title">📊 Log Blood Pressure &amp; Weight</div>
+      <div class="entry-subtitle">Enter a new reading — charts update instantly. Data is held for this session.</div>
+    </div>
+  </div>
+  <div class="entry-form">
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="inp-date">
+    </div>
+    <div class="field">
+      <label>Systolic (mmHg)</label>
+      <input type="number" id="inp-sys" min="60" max="260" placeholder="e.g. 122">
+    </div>
+    <div class="field">
+      <label>Diastolic (mmHg)</label>
+      <input type="number" id="inp-dia" min="40" max="180" placeholder="e.g. 80">
+    </div>
+    <div class="field">
+      <label>Weight (lbs)</label>
+      <input type="number" id="inp-wt" min="80" max="400" step="0.1" placeholder="e.g. 161">
+    </div>
+    <button class="btn-add" onclick="addReading()">＋ Add Reading</button>
+  </div>
+  <div class="entry-feedback" id="entry-feedback"></div>
+
+  <div class="live-status" id="live-status" style="display:none">
+    <div class="live-stat">
+      <div class="live-stat-val" id="live-bp-val">—</div>
+      <div class="live-stat-lbl">Latest BP (mmHg)</div>
+    </div>
+    <div class="live-stat">
+      <div class="live-stat-val" id="live-bp-cat" style="font-size:.9rem">—</div>
+      <div class="live-stat-lbl">BP Category</div>
+    </div>
+    <div class="live-stat">
+      <div class="live-stat-val" id="live-wt-val">—</div>
+      <div class="live-stat-lbl">Latest Weight (lbs)</div>
+    </div>
+    <div class="live-stat">
+      <div class="live-stat-val" id="live-bmi-val">—</div>
+      <div class="live-stat-lbl">Est. BMI</div>
+    </div>
+  </div>
+
+  <div class="log-section" id="log-section" style="display:none">
+    <div class="log-header">
+      <span class="log-title">Reading Log</span>
+      <button class="btn-clear" onclick="clearUserReadings()">Clear my entries</button>
+    </div>
+    <div id="log-body"></div>
+  </div>
+</div>
+
+<!-- BP + WEIGHT TRENDS -->
+<div class="grid-2 mb18">
+  <div class="panel">
+    <div class="panel-title">Blood Pressure Trend — Cardiology Visits <span style="color:var(--green);font-size:.72rem">Controlled</span></div>
+    <div class="chart-h200"><canvas id="bpChart"></canvas></div>
+    <div style="margin-top:10px;background:var(--green-bg);border:1px solid rgba(76,175,130,.25);border-radius:8px;padding:9px 12px;font-size:.77rem;color:var(--green)">
+      ✅ Systolic dropped from hypertensive urgency (165) to controlled (122) — a 43-point reduction. Diastolic normalized from 133→90. Attributed to weight loss + Metoprolol.
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Weight Trend — Cardiology Visits <span style="color:var(--green);font-size:.72rem">−31 lbs</span></div>
+    <div class="chart-h200"><canvas id="weightChart"></canvas></div>
+    <div style="margin-top:10px;background:var(--amber-bg);border:1px solid rgba(245,166,35,.25);border-radius:8px;padding:9px 12px;font-size:.77rem;color:var(--amber)">
+      ⚠ Significant weight loss of 31 lbs between Jul–Oct 2024. Weight rebounded slightly to ~161 lbs by Nov 2025. Maintaining weight &lt;160 lbs supports BP control and cardiovascular risk reduction.
+    </div>
+  </div>
+</div>
+
+<!-- LP(a) CHART + LIPID TREND -->
+<div class="grid-2">
+  <div class="panel">
+    <div class="panel-title">Lipid Trend — All 6 Draws &amp; CAD Targets <span style="color:var(--red);font-size:.72rem">CAD: LDL &lt;70</span></div>
+    <div class="chart-h240"><canvas id="lipidChart"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Lp(a) Trend — Both Draws</div>
+    <div class="chart-h200"><canvas id="lpaChart"></canvas></div>
+    <div style="margin-top:10px;font-size:.76rem;color:var(--muted)">
+      ⚠ Both readings 3–4× above the &lt;75 nmol/L threshold. In a confirmed CAD patient, elevated Lp(a) represents significant residual cardiovascular risk beyond what statins address. Clinical trial participation was discussed with Dr. Taheri Nov 2025.
+    </div>
+  </div>
+</div>
+
+<!-- CBC + METABOLIC -->
+<div class="grid-2">
+  <div class="panel">
+    <div class="panel-title">CBC — Platelet &amp; Blood Counts</div>
+
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Platelet Count (Mar '26)</span><span class="mval amber">140 ×10³/µL</span></div>
+      <div class="track"><div class="fill amber" style="width:.5%"></div><div class="dot amber" style="left:.5%" title="140 — at lower limit"></div></div>
+      <div class="ref-labels"><span>140 ▲ limit</span><span>425</span></div>
+    </div>
+
+    <div class="mrow">
+      <div class="mhead"><span class="mname">MPV (Mar '26)</span><span class="mval red">12.9 fL ↑</span></div>
+      <div class="track"><div class="fill red" style="width:100%"></div><div class="dot red" style="left:99%"></div></div>
+      <div class="ref-labels"><span>8.6</span><span style="color:var(--red)">12.1 max ← 12.9</span></div>
+    </div>
+
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Hemoglobin (Mar '26)</span><span class="mval green">13.0 g/dL</span></div>
+      <div class="track"><div class="fill green" style="width:20%"></div><div class="dot green" style="left:20%"></div></div>
+      <div class="ref-labels"><span>12.0</span><span>16.9</span></div>
+    </div>
+
+    <div class="mrow">
+      <div class="mhead"><span class="mname">WBC (Mar '26)</span><span class="mval green">5.39 ×10³/µL</span></div>
+      <div class="track"><div class="fill green" style="width:25%"></div><div class="dot green" style="left:25%"></div></div>
+      <div class="ref-labels"><span>3.66</span><span>10.6</span></div>
+    </div>
+
+    <div style="margin-top:6px">
+      <div class="panel-title" style="font-size:.74rem;margin-bottom:6px">Platelet Count Trend (statin started Oct '24)</div>
+      <div class="chart-h120"><canvas id="plateletChart"></canvas></div>
+    </div>
+    <div style="margin-top:8px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:6px;padding:8px 10px;font-size:.74rem;color:var(--amber)">
+      ⚠ Rosuvastatin-associated thrombocytopenia is a known though uncommon adverse effect. Monitoring trend is appropriate — platelets are improving (100→140) but warrant continued follow-up.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Basic Metabolic Panel (Mar '26)</div>
+
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Fasting Glucose</span><span class="mval green">94 mg/dL</span></div>
+      <div class="track"><div class="fill green" style="width:85%"></div><div class="dot green" style="left:85%"></div></div>
+      <div class="ref-labels"><span>65</span><span>99</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">eGFR</span><span class="mval green">82 mL/min</span></div>
+      <div class="track"><div class="fill green" style="left:50%;width:32%"></div><div class="dot green" style="left:82%"></div></div>
+      <div class="ref-labels"><span>0</span><span>60 min</span><span>100</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Creatinine</span><span class="mval green">1.12 mg/dL</span></div>
+      <div class="track"><div class="fill green" style="width:74%"></div><div class="dot green" style="left:74%"></div></div>
+      <div class="ref-labels"><span>0.6</span><span>1.29</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Sodium</span><span class="mval green">139 mmol/L</span></div>
+      <div class="track"><div class="fill green" style="width:36%"></div><div class="dot green" style="left:36%"></div></div>
+      <div class="ref-labels"><span>135</span><span>146</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Potassium</span><span class="mval green">4.1 mmol/L</span></div>
+      <div class="track"><div class="fill green" style="width:33%"></div><div class="dot green" style="left:33%"></div></div>
+      <div class="ref-labels"><span>3.5</span><span>5.3</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Calcium</span><span class="mval green">9.1 mg/dL</span></div>
+      <div class="track"><div class="fill green" style="width:29%"></div><div class="dot green" style="left:29%"></div></div>
+      <div class="ref-labels"><span>8.6</span><span>10.3</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">UACR (Kidney albumin)</span><span class="mval green">3 mg/g</span></div>
+      <div class="track"><div class="fill green" style="width:10%"></div><div class="dot green" style="left:10%"></div></div>
+      <div class="ref-labels"><span>0</span><span>30 max</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- HBA1C + CARDIAC + LIVER -->
+<div class="grid-3">
+  <div class="panel">
+    <div class="panel-title">HbA1c Trend</div>
+    <div class="chart-h200"><canvas id="hba1cChart"></canvas></div>
+    <div style="margin-top:10px">
+      <div class="mhead"><span class="mname">Latest HbA1c</span><span class="mval green">5.2%</span></div>
+      <div class="track" style="margin-top:3px"><div class="fill green" style="width:87%"></div><div class="dot green" style="left:87%"></div></div>
+      <div class="ref-labels"><span>4.0</span><span>5.7 pre-DM</span><span>6.5 DM</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Cardiac Markers (Nov '25)</div>
+    <div class="mrow" style="margin-top:4px">
+      <div class="mhead"><span class="mname">NT-proBNP (heart failure)</span><span class="mval green">&lt;50 pg/mL</span></div>
+      <div class="track"><div class="fill green" style="width:51%"></div><div class="dot green" style="left:51%"></div></div>
+      <div class="ref-labels"><span>0</span><span>97 max</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">HS-Troponin T (cardiac dmg)</span><span class="mval green">7.1 pg/mL</span></div>
+      <div class="track"><div class="fill green" style="width:37%"></div><div class="dot green" style="left:37%"></div></div>
+      <div class="ref-labels"><span>0</span><span>19 max</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">hs-CRP (inflammation)</span><span class="mval green">0.8 mg/L</span></div>
+      <div class="track"><div class="fill green" style="width:27%"></div><div class="dot green" style="left:27%"></div></div>
+      <div class="ref-labels"><span>0</span><span>1.0 low-risk max</span><span>3.0</span></div>
+    </div>
+    <div style="margin-top:14px;background:var(--green-bg);border:1px solid rgba(76,175,130,.25);border-radius:8px;padding:10px 12px;font-size:.78rem;color:var(--green)">
+      ✅ Despite confirmed CAD, no evidence of active heart failure, ischemic damage, or ongoing inflammation. Troponin and BNP within normal limits — stable myocardial function.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Liver Function (Mar '26)</div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">AST (SGOT)</span><span class="mval green">32 U/L</span></div>
+      <div class="track"><div class="fill green" style="width:73%"></div><div class="dot green" style="left:73%"></div></div>
+      <div class="ref-labels"><span>10</span><span>40</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">ALT (SGPT)</span><span class="mval green">36 U/L</span></div>
+      <div class="track"><div class="fill green" style="width:73%"></div><div class="dot green" style="left:73%"></div></div>
+      <div class="ref-labels"><span>9</span><span>46</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Alk Phosphatase</span><span class="mval green">80 U/L</span></div>
+      <div class="track"><div class="fill green" style="width:47%"></div><div class="dot green" style="left:47%"></div></div>
+      <div class="ref-labels"><span>36</span><span>130</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">GGT (Nov '25)</span><span class="mval green">25 U/L</span></div>
+      <div class="track"><div class="fill green" style="width:29%"></div><div class="dot green" style="left:29%"></div></div>
+      <div class="ref-labels"><span>10</span><span>61</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Albumin</span><span class="mval green">4.2 g/dL</span></div>
+      <div class="track"><div class="fill green" style="width:40%"></div><div class="dot green" style="left:40%"></div></div>
+      <div class="ref-labels"><span>3.6</span><span>5.1</span></div>
+    </div>
+    <div class="mrow">
+      <div class="mhead"><span class="mname">Total Bilirubin</span><span class="mval green">0.6 mg/dL</span></div>
+      <div class="track"><div class="fill green" style="width:40%"></div><div class="dot green" style="left:40%"></div></div>
+      <div class="ref-labels"><span>0.2</span><span>1.2</span></div>
+    </div>
+    <div style="margin-top:8px;background:var(--green-bg);border:1px solid rgba(76,175,130,.2);border-radius:6px;padding:7px 10px;font-size:.74rem;color:var(--green)">
+      ✅ Rosuvastatin not causing liver enzyme elevation. AST/ALT well within range. Safe to continue.
+    </div>
+  </div>
+</div>
+
+<!-- FULL DATA TABLE -->
+<div class="panel" style="margin-bottom:18px">
+  <div class="panel-title">Complete Results — All Draws &nbsp;·&nbsp; <span style="color:var(--red);font-size:.75rem;text-transform:none;letter-spacing:0">CAD patient: LDL target &lt;70 mg/dL · Apo B target &lt;80 mg/dL</span></div>
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead>
+        <tr><th>Test</th><th>Aug '24</th><th>Oct '24</th><th>Mar '25</th><th>Oct '25</th><th>Nov '25</th><th>Mar '26</th><th>Ref Range</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Lp(a)</strong></td><td>—</td><td>—</td><td>—</td><td class="hi-purple">238.2 ↑</td><td class="hi-purple">205.2 ↑</td><td>—</td><td>&lt;75 nmol/L</td><td><span class="pill purple">🔴 Critical</span></td></tr>
+        <tr><td>Total Cholesterol</td><td class="hi-red">228</td><td>119</td><td>143</td><td>131</td><td>154</td><td>119</td><td>&lt;200</td><td><span class="pill gold">🏆 −48%</span></td></tr>
+        <tr><td>LDL <em style="color:var(--red);font-size:.72rem">(CAD goal &lt;70)</em></td><td class="hi-red">159</td><td>69</td><td>81</td><td>70</td><td class="hi-amber">86 ↑</td><td class="hi-green">57 ✓</td><td>&lt;70 (CAD)</td><td><span class="pill gold">🏆 −64%</span></td></tr>
+        <tr><td>HDL</td><td>46</td><td class="hi-amber">36</td><td>46</td><td>48</td><td>54</td><td>51</td><td>&gt;40</td><td><span class="pill green">✓ Improving</span></td></tr>
+        <tr><td>Triglycerides</td><td>114</td><td>68</td><td>81</td><td>63</td><td>71</td><td>42</td><td>&lt;150</td><td><span class="pill green">✓ Excellent</span></td></tr>
+        <tr><td>Apo B <em style="color:var(--red);font-size:.72rem">(CAD goal &lt;80)</em></td><td>—</td><td>72</td><td>—</td><td>—</td><td>78</td><td>—</td><td>&lt;80 (CAD)</td><td><span class="pill green">✓ At Goal</span></td></tr>
+        <tr><td>HbA1c</td><td>5.6</td><td>5.2</td><td>5.2</td><td>—</td><td>5.2</td><td>5.2</td><td>&lt;5.7%</td><td><span class="pill green">✓ Stable</span></td></tr>
+        <tr><td>Platelet Count</td><td class="hi-red">100 ↓</td><td>—</td><td>—</td><td>—</td><td class="hi-amber">118 ↓</td><td class="hi-amber">140</td><td>140–425</td><td><span class="pill amber">⚠ Volatile</span></td></tr>
+        <tr><td>MPV</td><td class="hi-red">13.0 ↑</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="hi-red">12.9 ↑</td><td>8.6–12.1</td><td><span class="pill red">↑ Persistent</span></td></tr>
+        <tr><td>Hemoglobin</td><td>14.1</td><td>—</td><td>—</td><td>—</td><td>13.5</td><td>13.0</td><td>12–16.9</td><td><span class="pill blue">↓ Trending</span></td></tr>
+        <tr><td>hs-CRP</td><td>—</td><td class="hi-red">6.0 ↑</td><td>—</td><td>0.69</td><td class="hi-green">0.8</td><td>—</td><td>&lt;3.0 mg/L</td><td><span class="pill green">✓ Resolved</span></td></tr>
+        <tr><td>NT-proBNP</td><td>—</td><td>—</td><td>—</td><td>—</td><td>&lt;50</td><td>—</td><td>≤97 pg/mL</td><td><span class="pill green">✓ Excellent</span></td></tr>
+        <tr><td>Troponin T</td><td>—</td><td>—</td><td>—</td><td>—</td><td>7.1</td><td>—</td><td>&lt;19 pg/mL</td><td><span class="pill green">✓ Normal</span></td></tr>
+        <tr><td>Glucose (fast.)</td><td>84</td><td>—</td><td>—</td><td>—</td><td>86</td><td>94</td><td>65–99</td><td><span class="pill blue">↑ Monitor</span></td></tr>
+        <tr><td>eGFR</td><td>82</td><td>—</td><td>—</td><td>—</td><td>75</td><td>82</td><td>&gt;60</td><td><span class="pill green">✓ Stable</span></td></tr>
+        <tr><td>TSH</td><td>1.01</td><td>—</td><td>—</td><td>—</td><td>1.17</td><td>1.07</td><td>0.28–4.33</td><td><span class="pill green">✓ Stable</span></td></tr>
+        <tr><td>Vitamin D</td><td>64</td><td>—</td><td>—</td><td>—</td><td>—</td><td>82</td><td>30–100</td><td><span class="pill green">✓ Improved</span></td></tr>
+        <tr><td>UACR</td><td>—</td><td>—</td><td>—</td><td>—</td><td>3</td><td>—</td><td>&lt;30 mg/g</td><td><span class="pill green">✓ Excellent</span></td></tr>
+        <tr><td>PSA</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>1.19</td><td>&lt;4.0</td><td><span class="pill green">✓ Normal</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">
+  Dropbox / Health / Amila &nbsp;·&nbsp; Aug 2024 – Mar 2026 &nbsp;·&nbsp; 6 lab draws &nbsp;·&nbsp; Cardiology: Dr. Hamid Taheri MD &nbsp;·&nbsp; Educational purposes only &nbsp;·&nbsp; Not a substitute for medical advice
+</div>
+
+<script>
+// ─── CHART OPTIONS ────────────────────────────────────────────────────
+const chartOpts = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{
+    legend:{labels:{color:'#8b91b8',font:{size:10},boxWidth:10}},
+    tooltip:{backgroundColor:'#1a1d2e',borderColor:'#2e3250',borderWidth:1,titleColor:'#e8eaf6',bodyColor:'#8b91b8',padding:10}
+  },
+  scales:{
+    x:{ticks:{color:'#8b91b8',font:{size:9}},grid:{color:'rgba(46,50,80,.5)'}},
+    y:{ticks:{color:'#8b91b8',font:{size:9}},grid:{color:'rgba(46,50,80,.5)'}}
+  }
+};
+
+// ─── SEED DATA (from cardiology visits) ───────────────────────────────
+// Each entry: { date, label, sys, dia, weight, source }
+const seedBP = [
+  { date:'2024-07-12', label:'Jul 2024', sys:165, dia:133, weight:184,  source:'cardiology' },
+  { date:'2024-10-23', label:'Oct 2024', sys:120, dia:88,  weight:153,  source:'cardiology' },
+  { date:'2025-11-05', label:'Nov 2025', sys:122, dia:90,  weight:161,  source:'cardiology' },
+];
+
+// user-entered readings (in-memory only)
+let userReadings = [];
+
+// ─── BUILD CHART DATASETS ─────────────────────────────────────────────
+function getAllReadings() {
+  // Merge seed + user, sorted by date
+  return [...seedBP, ...userReadings].sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function getBPChartData() {
+  const all = getAllReadings();
+  const labels = all.map(r => r.label || formatLabel(r.date));
+  const sys    = all.map(r => r.sys  != null ? r.sys  : null);
+  const dia    = all.map(r => r.dia  != null ? r.dia  : null);
+  const sysTarget = all.map(() => 130);
+  const diaTarget = all.map(() => 80);
+  return { labels, sys, dia, sysTarget, diaTarget, all };
+}
+
+function getWeightChartData() {
+  const all = getAllReadings().filter(r => r.weight != null);
+  const labels  = all.map(r => r.label || formatLabel(r.date));
+  const weights = all.map(r => r.weight);
+  const targets = all.map(() => 155);
+  return { labels, weights, targets };
+}
+
+function formatLabel(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month:'short', year:'numeric' });
+}
+
+// ─── CHARTS ───────────────────────────────────────────────────────────
+let bpChartInst, weightChartInst;
+
+function buildBPChart() {
+  const { labels, sys, dia, sysTarget, diaTarget, all } = getBPChartData();
+  // Point styles: filled circle for cardiology, triangle for user
+  const ptStyles = all.map(r => r.source === 'cardiology' ? 'circle' : 'triangle');
+  const ptSizes  = all.map(r => r.source === 'cardiology' ? 7 : 8);
+  bpChartInst = new Chart(document.getElementById('bpChart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Systolic (mmHg)',data:sys,borderColor:'#ef5350',backgroundColor:'rgba(239,83,80,.1)',tension:.4,pointRadius:ptSizes,pointHoverRadius:10,pointStyle:ptStyles,fill:false,spanGaps:true},
+        {label:'Diastolic (mmHg)',data:dia,borderColor:'#ff8a65',backgroundColor:'rgba(255,138,101,.08)',tension:.4,pointRadius:ptSizes,pointHoverRadius:10,pointStyle:ptStyles,fill:false,spanGaps:true},
+        {label:'Systolic target (130)',data:sysTarget,borderColor:'rgba(76,175,130,.35)',backgroundColor:'transparent',borderDash:[6,4],pointRadius:0,fill:false},
+        {label:'Diastolic target (80)',data:diaTarget,borderColor:'rgba(76,175,130,.2)',backgroundColor:'transparent',borderDash:[6,4],pointRadius:0,fill:false}
+      ]
+    },
+    options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:60,max:190,
+      ticks:{color:'#8b91b8',font:{size:9},callback:v=>v+' mmHg'},
+      grid:{color:'rgba(46,50,80,.5)'}
+    }}}
+  });
+}
+
+function buildWeightChart() {
+  const { labels, weights, targets } = getWeightChartData();
+  const all = getAllReadings().filter(r => r.weight != null);
+  const ptStyles = all.map(r => r.source === 'cardiology' ? 'circle' : 'triangle');
+  const ptSizes  = all.map(r => r.source === 'cardiology' ? 7 : 8);
+  weightChartInst = new Chart(document.getElementById('weightChart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Weight (lbs)',data:weights,borderColor:'#5c9eff',backgroundColor:'rgba(92,158,255,.12)',tension:.4,pointRadius:ptSizes,pointHoverRadius:10,pointStyle:ptStyles,fill:true},
+        {label:'Target weight (≤155 lbs)',data:targets,borderColor:'rgba(76,175,130,.4)',backgroundColor:'transparent',borderDash:[6,4],pointRadius:0,fill:false}
+      ]
+    },
+    options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:130,max:200,
+      ticks:{color:'#8b91b8',font:{size:9},callback:v=>v+' lbs'},
+      grid:{color:'rgba(46,50,80,.5)'}
+    }}}
+  });
+}
+
+function refreshBPChart() {
+  if (!bpChartInst) return;
+  const { labels, sys, dia, sysTarget, diaTarget, all } = getBPChartData();
+  const ptStyles = all.map(r => r.source === 'cardiology' ? 'circle' : 'triangle');
+  const ptSizes  = all.map(r => r.source === 'cardiology' ? 7 : 8);
+  bpChartInst.data.labels = labels;
+  bpChartInst.data.datasets[0].data = sys;
+  bpChartInst.data.datasets[0].pointStyle = ptStyles;
+  bpChartInst.data.datasets[0].pointRadius = ptSizes;
+  bpChartInst.data.datasets[1].data = dia;
+  bpChartInst.data.datasets[1].pointStyle = ptStyles;
+  bpChartInst.data.datasets[1].pointRadius = ptSizes;
+  bpChartInst.data.datasets[2].data = sysTarget;
+  bpChartInst.data.datasets[3].data = diaTarget;
+  bpChartInst.update();
+}
+
+function refreshWeightChart() {
+  if (!weightChartInst) return;
+  const { labels, weights, targets } = getWeightChartData();
+  const all = getAllReadings().filter(r => r.weight != null);
+  const ptStyles = all.map(r => r.source === 'cardiology' ? 'circle' : 'triangle');
+  const ptSizes  = all.map(r => r.source === 'cardiology' ? 7 : 8);
+  weightChartInst.data.labels = labels;
+  weightChartInst.data.datasets[0].data = weights;
+  weightChartInst.data.datasets[0].pointStyle = ptStyles;
+  weightChartInst.data.datasets[0].pointRadius = ptSizes;
+  weightChartInst.data.datasets[1].data = targets;
+  weightChartInst.update();
+}
+
+// ─── BP CATEGORY ──────────────────────────────────────────────────────
+function bpCategory(sys, dia) {
+  if (sys < 120 && dia < 80)  return { cat:'Normal',           cls:'bp-ok' };
+  if (sys < 130 && dia < 80)  return { cat:'Elevated',         cls:'bp-warn' };
+  if (sys < 140 || dia < 90)  return { cat:'Stage 1 High',     cls:'bp-warn' };
+  if (sys < 180 && dia < 120) return { cat:'Stage 2 High',     cls:'bp-hi' };
+  return                               { cat:'Hypertensive Crisis', cls:'bp-hi' };
+}
+
+// ─── BMI ──────────────────────────────────────────────────────────────
+function calcBMI(lbs) {
+  // Height assumed 5′8″ (Amila's approximate height based on BMI 27.98 at 184 lbs)
+  const heightM = 1.727;
+  const kg = lbs * 0.453592;
+  return (kg / (heightM * heightM)).toFixed(1);
+}
+
+// ─── ADD READING ──────────────────────────────────────────────────────
+function addReading() {
+  const dateVal = document.getElementById('inp-date').value;
+  const sysVal  = document.getElementById('inp-sys').value.trim();
+  const diaVal  = document.getElementById('inp-dia').value.trim();
+  const wtVal   = document.getElementById('inp-wt').value.trim();
+  const fb      = document.getElementById('entry-feedback');
+
+  // Validation
+  if (!dateVal) { showFb('Please select a date.', 'err'); return; }
+  if (!sysVal && !diaVal && !wtVal) { showFb('Enter at least one value (BP or weight).', 'err'); return; }
+  if ((sysVal && !diaVal) || (!sysVal && diaVal)) { showFb('Please enter both Systolic and Diastolic values.', 'err'); return; }
+  if (sysVal && (isNaN(sysVal) || +sysVal < 60 || +sysVal > 260)) { showFb('Systolic must be between 60–260 mmHg.', 'err'); return; }
+  if (diaVal && (isNaN(diaVal) || +diaVal < 40 || +diaVal > 180)) { showFb('Diastolic must be between 40–180 mmHg.', 'err'); return; }
+  if (wtVal  && (isNaN(wtVal)  || +wtVal  < 80  || +wtVal  > 400)) { showFb('Weight must be between 80–400 lbs.', 'err'); return; }
+
+  const reading = {
+    date:   dateVal,
+    label:  formatLabel(dateVal),
+    sys:    sysVal  ? +sysVal  : null,
+    dia:    diaVal  ? +diaVal  : null,
+    weight: wtVal   ? +wtVal   : null,
+    source: 'user',
+    id:     Date.now()
+  };
+
+  userReadings.push(reading);
+  userReadings.sort((a,b) => a.date.localeCompare(b.date));
+
+  refreshBPChart();
+  refreshWeightChart();
+  updateLiveStatus();
+  renderLog();
+
+  // Clear inputs
+  document.getElementById('inp-sys').value = '';
+  document.getElementById('inp-dia').value = '';
+  document.getElementById('inp-wt').value  = '';
+  document.getElementById('inp-date').value = '';
+
+  const parts = [];
+  if (sysVal) parts.push(`BP ${sysVal}/${diaVal} mmHg`);
+  if (wtVal)  parts.push(`Weight ${wtVal} lbs`);
+  showFb('✓ Added: ' + parts.join('  ·  ') + ' on ' + formatLabel(dateVal), 'ok');
+}
+
+function showFb(msg, cls) {
+  const fb = document.getElementById('entry-feedback');
+  fb.textContent = msg;
+  fb.className = 'entry-feedback ' + cls;
+  if (cls === 'ok') setTimeout(() => { fb.textContent = ''; fb.className = 'entry-feedback'; }, 4000);
+}
+
+// ─── LIVE STATUS SUMMARY ──────────────────────────────────────────────
+function updateLiveStatus() {
+  const allR = getAllReadings();
+  // Latest with BP
+  const latestBP = [...allR].reverse().find(r => r.sys != null);
+  // Latest with weight
+  const latestWT = [...allR].reverse().find(r => r.weight != null);
+
+  const ls = document.getElementById('live-status');
+  ls.style.display = 'flex';
+
+  if (latestBP) {
+    const {cat, cls} = bpCategory(latestBP.sys, latestBP.dia);
+    document.getElementById('live-bp-val').textContent = `${latestBP.sys}/${latestBP.dia}`;
+    document.getElementById('live-bp-val').className = 'live-stat-val ' + cls;
+    document.getElementById('live-bp-cat').textContent = cat;
+    document.getElementById('live-bp-cat').className = 'live-stat-val ' + cls;
+  }
+  if (latestWT) {
+    const bmi = calcBMI(latestWT.weight);
+    document.getElementById('live-wt-val').textContent = latestWT.weight + ' lbs';
+    document.getElementById('live-wt-val').className = 'live-stat-val ' + (latestWT.weight <= 160 ? 'bp-ok' : 'bp-warn');
+    document.getElementById('live-bmi-val').textContent = bmi;
+    document.getElementById('live-bmi-val').className = 'live-stat-val ' + (+bmi < 25 ? 'bp-ok' : +bmi < 30 ? 'bp-warn' : 'bp-hi');
+  }
+}
+
+// ─── READING LOG ──────────────────────────────────────────────────────
+function renderLog() {
+  const section = document.getElementById('log-section');
+  const body    = document.getElementById('log-body');
+  if (userReadings.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  const rows = [...userReadings].reverse().map(r => {
+    const bpStr = r.sys != null ? `${r.sys}/${r.dia}` : '—';
+    const wtStr = r.weight != null ? r.weight + ' lbs' : '—';
+    const bmiStr = r.weight != null ? calcBMI(r.weight) : '—';
+    const bpCls = r.sys != null ? bpCategory(r.sys, r.dia).cls : '';
+    const wtCls = r.weight != null ? (r.weight <= 160 ? 'w-ok' : 'w-warn') : '';
+    const d = new Date(r.date + 'T12:00:00');
+    const dateDisp = d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return `<tr>
+      <td>${dateDisp}</td>
+      <td class="${bpCls}">${bpStr}</td>
+      <td class="${wtCls}">${wtStr}</td>
+      <td>${bmiStr}</td>
+      <td><span class="tag-user">You</span></td>
+      <td><button class="log-delete" title="Remove" onclick="removeReading(${r.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  // Seed rows summary
+  const seedRows = seedBP.map(r => {
+    const bpCls = bpCategory(r.sys, r.dia).cls;
+    const d = new Date(r.date + 'T12:00:00');
+    const dateDisp = d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return `<tr style="opacity:.55">
+      <td>${dateDisp}</td>
+      <td class="${bpCls}">${r.sys}/${r.dia}</td>
+      <td>${r.weight} lbs</td>
+      <td>${calcBMI(r.weight)}</td>
+      <td><span class="tag-sys">Dr. Taheri</span></td>
+      <td>—</td>
+    </tr>`;
+  }).reverse().join('');
+
+  body.innerHTML = `<table class="log-tbl">
+    <thead><tr><th>Date</th><th>BP (mmHg)</th><th>Weight</th><th>Est. BMI</th><th>Source</th><th></th></tr></thead>
+    <tbody>${rows}${seedRows}</tbody>
+  </table>`;
+}
+
+function removeReading(id) {
+  userReadings = userReadings.filter(r => r.id !== id);
+  refreshBPChart();
+  refreshWeightChart();
+  updateLiveStatus();
+  renderLog();
+  if (userReadings.length === 0) document.getElementById('live-status').style.display = 'none';
+}
+
+function clearUserReadings() {
+  if (!confirm('Remove all your manually entered readings?')) return;
+  userReadings = [];
+  refreshBPChart();
+  refreshWeightChart();
+  document.getElementById('live-status').style.display = 'none';
+  document.getElementById('log-section').style.display = 'none';
+}
+
+// ─── INITIALISE DATE INPUT TO TODAY ───────────────────────────────────
+document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+
+// ─── INIT CHARTS ──────────────────────────────────────────────────────
+buildBPChart();
+buildWeightChart();
+updateLiveStatus();  // show seed-based summary on load
+
+// ─── REMAINING CHARTS (static) ────────────────────────────────────────
+
+// LIPID TREND (LDL target 70 for CAD)
+new Chart(document.getElementById('lipidChart'),{
+  type:'line',
+  data:{
+    labels:['Aug 2024','Oct 2024','Mar 2025','Oct 2025','Nov 2025','Mar 2026'],
+    datasets:[
+      {label:'Total Cholesterol',data:[228,119,143,131,154,119],borderColor:'#ef5350',backgroundColor:'rgba(239,83,80,.07)',tension:.4,pointRadius:5,pointHoverRadius:7,fill:false},
+      {label:'LDL',data:[159,69,81,70,86,57],borderColor:'#ff8a65',backgroundColor:'rgba(255,138,101,.07)',tension:.4,pointRadius:5,pointHoverRadius:7,fill:false},
+      {label:'HDL',data:[46,36,46,48,54,51],borderColor:'#4caf82',backgroundColor:'rgba(76,175,130,.07)',tension:.4,pointRadius:5,pointHoverRadius:7,fill:false},
+      {label:'Triglycerides',data:[114,68,81,63,71,42],borderColor:'#b39ddb',backgroundColor:'transparent',tension:.4,pointRadius:5,pointHoverRadius:7,fill:false,borderDash:[4,3]},
+      {label:'CAD LDL Target 70',data:[70,70,70,70,70,70],borderColor:'rgba(239,83,80,.4)',backgroundColor:'transparent',borderDash:[6,4],pointRadius:0,fill:false},
+    ]
+  },
+  options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:0,max:260}}}
+});
+
+// LP(A) CHART
+new Chart(document.getElementById('lpaChart'),{
+  type:'bar',
+  data:{
+    labels:['Oct 2025','Nov 2025'],
+    datasets:[
+      {label:'Lp(a) (nmol/L)',data:[238.2,205.2],backgroundColor:['rgba(179,157,219,.6)','rgba(179,157,219,.6)'],borderColor:['#b39ddb','#b39ddb'],borderWidth:2,borderRadius:8},
+      {label:'Reference max (75)',data:[75,75],type:'line',borderColor:'rgba(76,175,130,.5)',backgroundColor:'transparent',borderDash:[6,4],pointRadius:0}
+    ]
+  },
+  options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:0,max:280,
+    ticks:{color:'#8b91b8',font:{size:9},callback:v=>v+' nmol/L'},
+    grid:{color:'rgba(46,50,80,.5)'}
+  }}}
+});
+
+// PLATELET TREND
+new Chart(document.getElementById('plateletChart'),{
+  type:'line',
+  data:{
+    labels:['Aug 2024','Nov 2025','Mar 2026'],
+    datasets:[
+      {label:'Platelets ×10³/µL',data:[100,118,140],borderColor:'#f5a623',backgroundColor:'rgba(245,166,35,.1)',tension:.4,pointRadius:6,pointHoverRadius:8,fill:true},
+      {label:'Lower limit (140)',data:[140,140,140],borderColor:'rgba(239,83,80,.4)',backgroundColor:'transparent',borderDash:[5,4],pointRadius:0}
+    ]
+  },
+  options:{...chartOpts,plugins:{...chartOpts.plugins,legend:{labels:{color:'#8b91b8',font:{size:9},boxWidth:10}}},
+    scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:60,max:180,
+      ticks:{color:'#8b91b8',font:{size:9}},grid:{color:'rgba(46,50,80,.5)'}}}
+  }
+});
+
+// HBA1C TREND
+new Chart(document.getElementById('hba1cChart'),{
+  type:'line',
+  data:{
+    labels:['Aug 2024','Oct 2024','Mar 2025','Nov 2025','Mar 2026'],
+    datasets:[
+      {label:'HbA1c (%)',data:[5.6,5.2,5.2,5.2,5.2],borderColor:'#5c9eff',backgroundColor:'rgba(92,158,255,.1)',tension:.4,pointRadius:5,fill:true},
+      {label:'Prediabetes (5.7)',data:[5.7,5.7,5.7,5.7,5.7],borderColor:'rgba(245,166,35,.4)',backgroundColor:'transparent',borderDash:[5,4],pointRadius:0}
+    ]
+  },
+  options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:4.5,max:6.5,
+    ticks:{color:'#8b91b8',font:{size:9}},grid:{color:'rgba(46,50,80,.5)'}}}}
+});
+</script>
+</body>
+</html>
